@@ -1,6 +1,6 @@
 # CUO Handshake Fix Patcher
 
-CUO Handshake Fix Patcher is a portable Windows utility for Razor Enhanced users who get disconnected after about four minutes when playing through ClassicUO or Legacy TazUO. It updates Razor Enhanced’s handling of the `0xD5` server handshake and backs up `RazorEnhanced.exe` before patching it.
+CUO Handshake Fix Patcher is a portable Windows utility for Razor Enhanced users who get disconnected after about four minutes when playing through ClassicUO Desktop or Legacy TazUO. It updates Razor Enhanced’s handling of the `0xD5` server handshake and backs up `RazorEnhanced.exe` before patching it.
 
 ## Download
 
