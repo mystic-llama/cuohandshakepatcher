@@ -1,0 +1,6 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/CuoHandshakeFix/CuoHandshakeFix.csproj" />
+    <Project Path="src/CuoHandshakePatcher/CuoHandshakePatcher.csproj" />
+  </Folder>
+</Solution>

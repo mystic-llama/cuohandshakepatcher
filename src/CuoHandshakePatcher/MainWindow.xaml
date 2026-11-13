@@ -1,0 +1,129 @@
+﻿<Window x:Class="CuoHandshakePatcher.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="CUO Handshake Fix"
+        Height="680" Width="520"
+        MinHeight="600" MinWidth="460"
+        WindowStartupLocation="CenterScreen"
+        WindowStyle="None"
+        AllowsTransparency="False"
+        Background="{StaticResource WindowBackgroundBrush}"
+        FontFamily="{StaticResource AppFont}"
+        ResizeMode="CanMinimize">
+    <Window.Triggers>
+        <EventTrigger RoutedEvent="Loaded">
+            <BeginStoryboard>
+                <Storyboard>
+                    <DoubleAnimation Storyboard.TargetProperty="Opacity" From="0" To="1" Duration="0:0:0.28" />
+                </Storyboard>
+            </BeginStoryboard>
+        </EventTrigger>
+    </Window.Triggers>
+
+    <Border BorderBrush="{StaticResource AppBorderBrush}" BorderThickness="1">
+        <DockPanel>
+            <!-- Caption -->
+            <Border DockPanel.Dock="Top" Background="#FF0D1117" Height="36" MouseLeftButtonDown="Caption_MouseLeftButtonDown">
+                <Grid>
+                    <TextBlock Text="CUO Handshake Fix" VerticalAlignment="Center" Margin="14,0,0,0"
+                               Foreground="{StaticResource TextMutedBrush}" FontSize="12" />
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                        <Button Content="—" Style="{StaticResource CaptionButtonStyle}" Click="Minimize_Click" />
+                        <Button Content="✕" Style="{StaticResource CaptionButtonStyle}" Click="Close_Click" />
+                    </StackPanel>
+                </Grid>
+            </Border>
+
+            <!-- Banner -->
+            <Border DockPanel.Dock="Top" Height="140" Background="{StaticResource BannerBrush}">
+                <Grid>
+                    <Image x:Name="BannerImage" Stretch="UniformToFill" Opacity="0.35" />
+                    <Border>
+                        <Border.Background>
+                            <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
+                                <GradientStop Color="#CC0D1117" Offset="0" />
+                                <GradientStop Color="#000D1117" Offset="0.65" />
+                            </LinearGradientBrush>
+                        </Border.Background>
+                    </Border>
+                    <StackPanel VerticalAlignment="Center" Margin="24,0,24,0">
+                        <TextBlock Text="CUO Handshake Fix" FontSize="26" FontWeight="Bold"
+                                   Foreground="{StaticResource TextPrimaryBrush}" />
+                        <TextBlock Text="Patch Razor Enhanced for ClassicUO 0xD5 challenges"
+                                   Foreground="{StaticResource TextMutedBrush}" FontSize="12" Margin="0,6,0,0"
+                                   TextWrapping="Wrap" />
+                    </StackPanel>
+                </Grid>
+            </Border>
+
+            <Grid Margin="20">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                </Grid.RowDefinitions>
+
+                <!-- Path -->
+                <StackPanel Grid.Row="0">
+                    <TextBlock Text="Razor Enhanced folder" Foreground="{StaticResource TextMutedBrush}" FontSize="11" Margin="0,0,0,6" />
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <Border Background="{StaticResource SurfaceBrush}" BorderBrush="{StaticResource AppBorderBrush}"
+                                BorderThickness="1" CornerRadius="6" Padding="10,8">
+                            <TextBlock x:Name="PathText" Text="No folder selected" TextWrapping="Wrap"
+                                       Foreground="{StaticResource TextPrimaryBrush}" FontSize="12" />
+                        </Border>
+                        <Button Grid.Column="1" Content="Browse" Margin="8,0,0,0"
+                                Style="{StaticResource SecondaryButtonStyle}" Click="Browse_Click" />
+                    </Grid>
+                </StackPanel>
+
+                <!-- Status -->
+                <StackPanel Grid.Row="1" Margin="0,16,0,0">
+                    <StackPanel Orientation="Horizontal">
+                        <Border x:Name="StatusChip" CornerRadius="10" Padding="10,4" Background="#3321262D"
+                                BorderBrush="{StaticResource AppBorderBrush}" BorderThickness="1">
+                            <TextBlock x:Name="StatusText" Text="Unknown" Foreground="{StaticResource TextMutedBrush}" FontSize="12" />
+                        </Border>
+                        <Border x:Name="ElevationChip" CornerRadius="10" Padding="10,4" Background="#3321262D" Margin="8,0,0,0"
+                                BorderBrush="{StaticResource AppBorderBrush}" BorderThickness="1">
+                            <TextBlock x:Name="ElevationText" Text="UAC unknown" Foreground="{StaticResource TextMutedBrush}" FontSize="12" />
+                        </Border>
+                        <TextBlock x:Name="VersionText" VerticalAlignment="Center" Margin="12,0,0,0"
+                                   Foreground="{StaticResource TextMutedBrush}" FontSize="12" />
+                    </StackPanel>
+                    <CheckBox x:Name="RemoveAdminCheck" Margin="0,14,0,0"
+                              Foreground="{StaticResource TextPrimaryBrush}" FontSize="12"
+                              Content="Remove admin requirement (Winlator / asInvoker)" />
+                    <TextBlock Margin="22,4,0,0" TextWrapping="Wrap" FontSize="11"
+                               Foreground="{StaticResource TextMutedBrush}"
+                               Text="Rewrites RE's embedded manifest so it no longer requests UAC elevation. Useful for Winlator and other hosts that reject requireAdministrator." />
+                </StackPanel>
+
+                <!-- Actions -->
+                <StackPanel Grid.Row="2" Orientation="Horizontal" Margin="0,18,0,0">
+                    <Button x:Name="ApplyButton" Content="Apply Patch" Style="{StaticResource PrimaryButtonStyle}"
+                            Click="Apply_Click" MinWidth="130" />
+                    <Button x:Name="RestoreButton" Content="Restore Backup" Style="{StaticResource SecondaryButtonStyle}"
+                            Click="Restore_Click" Margin="10,0,0,0" MinWidth="130" />
+                </StackPanel>
+
+                <TextBlock Grid.Row="3" Text="Log" Foreground="{StaticResource TextMutedBrush}" FontSize="11" Margin="0,18,0,6" />
+
+                <Border Grid.Row="4" Background="{StaticResource SurfaceBrush}" BorderBrush="{StaticResource AppBorderBrush}"
+                        BorderThickness="1" CornerRadius="6">
+                    <ScrollViewer x:Name="LogScroll" VerticalScrollBarVisibility="Auto" Padding="10">
+                        <TextBox x:Name="LogBox" IsReadOnly="True" TextWrapping="Wrap" BorderThickness="0"
+                                 Background="Transparent" Foreground="{StaticResource TextPrimaryBrush}"
+                                 FontFamily="Consolas" FontSize="11" AcceptsReturn="True" />
+                    </ScrollViewer>
+                </Border>
+            </Grid>
+        </DockPanel>
+    </Border>
+</Window>
