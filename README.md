@@ -16,6 +16,14 @@ Open **Releases** on the GitHub repository and download `CuoHandshakePatcher-v1.
 
 To undo the patch, close both apps, reopen the patcher, and select **Restore Backup**. The patcher restores the latest backup of `RazorEnhanced.exe` and removes `CuoHandshakeFix.dll`.
 
+## Run Razor Enhanced without an administrator prompt (Winlator)
+
+Winlator can have trouble launching Razor Enhanced when the executable requests administrator elevation. To remove that launch requirement, close Razor Enhanced and the game client, then open the patcher and select the Razor Enhanced folder. Check **Remove admin requirement (Winlator / asInvoker)** and click **Apply Patch**. You can do this even if the handshake fix is already installed.
+
+The checkbox changes the Windows manifest inside `RazorEnhanced.exe` from `requireAdministrator` to `asInvoker`, so Razor Enhanced starts with the permissions of whatever launched it. The patcher displays **No admin** when it detects the updated manifest. The patcher itself still needs permission to write to the Razor Enhanced folder and may request elevation on Windows for a protected folder.
+
+**Restore Backup** restores the latest saved executable, including its original elevation setting, and removes the handshake fix DLL.
+
 ## Build the portable Windows x64 release
 
 On Windows, install the .NET 8 SDK and the .NET Framework 4.7.2 Developer Pack. The command builds the project directly. Opening or building the `.slnx` solution requires Visual Studio 2022 17.13 or later, or .NET SDK 9.0.200 or later. Microsoft ended support for .NET 8 on November 10, 2026.
