@@ -2,6 +2,8 @@
 
 CUO Handshake Fix Patcher is a portable Windows utility for Razor Enhanced users who get disconnected after about four minutes when playing through ClassicUO Desktop or Legacy TazUO. It updates Razor Enhanced’s handling of the `0xD5` server handshake and backs up `RazorEnhanced.exe` before patching it.
 
+![CUO Handshake Fix Patcher showing Patched and No admin status](docs/patcher-screenshot.png)
+
 ## Download
 
 Open **Releases** on the GitHub repository and download `CuoHandshakePatcher-v1.0.0-win-x64.zip`. The portable build includes the .NET Desktop runtime. Compatibility covers **ClassicUO** and **Legacy TazUO (.NET Framework 4.7.2)** with Razor Enhanced in plugin mode.
