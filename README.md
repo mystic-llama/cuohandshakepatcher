@@ -11,7 +11,7 @@ Open **Releases** on the GitHub repository and download `CuoHandshakePatcher-v1.
 ## Apply the patch
 
 1. Close Razor Enhanced and ClassicUO.
-2. Extract the ZIP and run `CuoHandshakePatcher.exe`. Keep the `Assets` folder next to the executable for the banner artwork.
+2. Extract the ZIP and run `CuoHandshakePatcher.exe`.
 3. Confirm the detected Razor Enhanced folder or select it with **Browse**.
 4. Click **Apply Patch**.
 5. Open Razor Enhanced from the same folder and select **Launch CUO**.
