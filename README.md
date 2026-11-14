@@ -6,11 +6,11 @@ CUO Handshake Fix Patcher is a portable Windows utility for Razor Enhanced users
 
 ## Download
 
-Open **Releases** on the GitHub repository and download `CuoHandshakePatcher-v1.0.0-win-x64.zip`. The portable build includes the .NET Desktop runtime. Compatibility covers **ClassicUO** and **Legacy TazUO (.NET Framework 4.7.2)** with Razor Enhanced in plugin mode.
+Open **Releases** on the GitHub repository and download `CuoHandshakePatcher-v1.0.0-win-x64.zip`. The portable build includes the .NET Desktop runtime. Compatibility covers **ClassicUO Desktop** with Razor Enhanced in plugin mode.
 
 ## Apply the patch
 
-1. Close Razor Enhanced and ClassicUO or Legacy TazUO.
+1. Close Razor Enhanced and ClassicUO.
 2. Extract the ZIP and run `CuoHandshakePatcher.exe`. Keep the `Assets` folder next to the executable for the banner artwork.
 3. Confirm the detected Razor Enhanced folder or select it with **Browse**.
 4. Click **Apply Patch**.
