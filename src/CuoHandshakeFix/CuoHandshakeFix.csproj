@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>net472</TargetFramework>
+    <!-- netstandard2.0 loads in RazorEnhanced and NeoUO-net472. -->
+    <TargetFramework>netstandard2.0</TargetFramework>
     <RootNamespace>CuoHandshakeFix</RootNamespace>
     <AssemblyName>CuoHandshakeFix</AssemblyName>
     <LangVersion>latest</LangVersion>
@@ -8,7 +9,7 @@
     <Deterministic>true</Deterministic>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="System" />
-    <Reference Include="System.Core" />
+    <PackageReference Include="System.Reflection.Emit.Lightweight" Version="4.7.0" />
+    <PackageReference Include="System.Diagnostics.FileVersionInfo" Version="4.3.0" />
   </ItemGroup>
 </Project>

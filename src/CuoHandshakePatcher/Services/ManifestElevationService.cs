@@ -19,12 +19,16 @@ public static class ManifestElevationService
 {
     // IMPORTANT: The embedded PE manifest uses a self-closing tag with a single space
     // after "requestedExecutionLevel". Commented examples use TWO spaces — do not match those.
-    // mt.exe may rewrite the tag form when extracting; trust the on-disk ASCII bytes.
     private const string RequireAdministratorLive =
         "<requestedExecutionLevel level=\"requireAdministrator\" uiAccess=\"false\" />";
 
-    // 11 trailing spaces inside the attribute keep this the same length as requireAdministrator.
+    // Valid asInvoker value; 11 spaces AFTER the tag keep the PE length identical.
+    // (Padding inside the attribute value breaks Windows SxS and causes side-by-side errors.)
     private const string AsInvokerLive =
+        "<requestedExecutionLevel level=\"asInvoker\" uiAccess=\"false\" />           ";
+
+    // Older broken patch that put spaces inside level="...". Detect + repair.
+    private const string AsInvokerBroken =
         "<requestedExecutionLevel level=\"asInvoker           \" uiAccess=\"false\" />";
 
     public static ElevationMode GetMode(string exePath)
@@ -34,10 +38,17 @@ public static class ManifestElevationService
         if (ascii.Contains(RequireAdministratorLive, StringComparison.Ordinal))
             return ElevationMode.RequireAdministrator;
 
-        if (ascii.Contains(AsInvokerLive, StringComparison.Ordinal))
+        if (ascii.Contains(AsInvokerLive, StringComparison.Ordinal)
+            || ascii.Contains(AsInvokerBroken, StringComparison.Ordinal))
             return ElevationMode.AsInvoker;
 
         return ElevationMode.Unknown;
+    }
+
+    public static bool HasBrokenAsInvokerPadding(string exePath)
+    {
+        string ascii = Encoding.ASCII.GetString(File.ReadAllBytes(exePath));
+        return ascii.Contains(AsInvokerBroken, StringComparison.Ordinal);
     }
 
     public static string Describe(ElevationMode mode) => mode switch
@@ -49,14 +60,22 @@ public static class ManifestElevationService
 
     public static bool SetAsInvoker(string exePath, Action<string>? log = null)
     {
-        ElevationMode current = GetMode(exePath);
-        if (current == ElevationMode.AsInvoker)
+        string ascii = Encoding.ASCII.GetString(File.ReadAllBytes(exePath));
+
+        if (ascii.Contains(AsInvokerBroken, StringComparison.Ordinal))
+        {
+            ReplaceAscii(exePath, AsInvokerBroken, AsInvokerLive);
+            log?.Invoke("Repaired invalid asInvoker manifest padding (fixes side-by-side launch error).");
+            return true;
+        }
+
+        if (ascii.Contains(AsInvokerLive, StringComparison.Ordinal))
         {
             log?.Invoke("Manifest already set to asInvoker (no admin).");
             return false;
         }
 
-        if (current != ElevationMode.RequireAdministrator)
+        if (!ascii.Contains(RequireAdministratorLive, StringComparison.Ordinal))
             throw new InvalidOperationException(
                 "Could not find the live requireAdministrator manifest entry. This RE build may use a different manifest layout.");
 
@@ -71,26 +90,37 @@ public static class ManifestElevationService
 
     public static bool SetRequireAdministrator(string exePath, Action<string>? log = null)
     {
-        ElevationMode current = GetMode(exePath);
-        if (current == ElevationMode.RequireAdministrator)
+        string ascii = Encoding.ASCII.GetString(File.ReadAllBytes(exePath));
+
+        if (ascii.Contains(RequireAdministratorLive, StringComparison.Ordinal))
         {
             log?.Invoke("Manifest already requires administrator.");
             return false;
         }
 
-        if (current != ElevationMode.AsInvoker)
-            throw new InvalidOperationException(
-                "This exe cannot be reverted in-place to requireAdministrator. Restore a backup instead.");
+        if (ascii.Contains(AsInvokerBroken, StringComparison.Ordinal))
+        {
+            ReplaceAscii(exePath, AsInvokerBroken, RequireAdministratorLive);
+            log?.Invoke("Manifest updated: broken asInvoker → requireAdministrator.");
+            return true;
+        }
 
-        ReplaceAscii(exePath, AsInvokerLive, RequireAdministratorLive);
-        log?.Invoke("Manifest updated: asInvoker → requireAdministrator.");
-        return true;
+        if (ascii.Contains(AsInvokerLive, StringComparison.Ordinal))
+        {
+            ReplaceAscii(exePath, AsInvokerLive, RequireAdministratorLive);
+            log?.Invoke("Manifest updated: asInvoker → requireAdministrator.");
+            return true;
+        }
+
+        throw new InvalidOperationException(
+            "This exe cannot be reverted in-place to requireAdministrator. Restore a backup instead.");
     }
 
     private static void ReplaceAscii(string exePath, string oldText, string newText)
     {
         if (oldText.Length != newText.Length)
-            throw new InvalidOperationException("Manifest patch strings must be the same length.");
+            throw new InvalidOperationException(
+                $"Manifest patch strings must be the same length ({oldText.Length} vs {newText.Length}).");
 
         byte[] bytes = File.ReadAllBytes(exePath);
         byte[] oldBytes = Encoding.ASCII.GetBytes(oldText);

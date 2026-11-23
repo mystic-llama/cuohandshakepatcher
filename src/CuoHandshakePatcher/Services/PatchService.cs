@@ -13,33 +13,44 @@ public enum PatchStatus
 
 public sealed class PatchService
 {
-    public string? InstallDirectory { get; private set; }
+    public TargetInfo? Target { get; private set; }
 
     public event Action<string>? Log;
 
+    public void SetTarget(TargetInfo target)
+    {
+        if (!Directory.Exists(target.InstallDirectory))
+            throw new DirectoryNotFoundException(target.InstallDirectory);
+        if (!File.Exists(target.PatchAssemblyPath))
+            throw new FileNotFoundException("Patch target assembly not found.", target.PatchAssemblyPath);
+        Target = target;
+    }
+
     public void SetInstallDirectory(string directory)
     {
-        if (!Directory.Exists(directory))
-            throw new DirectoryNotFoundException(directory);
-        string exe = RazorLocator.ExePath(directory);
-        if (!File.Exists(exe))
-            throw new FileNotFoundException("RazorEnhanced.exe not found.", exe);
-        InstallDirectory = directory;
+        SetTarget(TargetLocator.ResolveFromDirectory(directory));
     }
 
     public string? GetInstalledVersion()
     {
-        if (InstallDirectory == null) return null;
-        return FileVersionInfo.GetVersionInfo(RazorLocator.ExePath(InstallDirectory)).FileVersion;
+        if (Target == null) return null;
+        try
+        {
+            return FileVersionInfo.GetVersionInfo(Target.PatchAssemblyPath).FileVersion;
+        }
+        catch
+        {
+            return null;
+        }
     }
 
     public PatchStatus GetStatus()
     {
-        if (InstallDirectory == null) return PatchStatus.Unknown;
+        if (Target == null) return PatchStatus.Unknown;
         try
         {
-            bool marker = CecilInjector.IsPatched(RazorLocator.ExePath(InstallDirectory));
-            bool dll = File.Exists(RazorLocator.FixDllPath(InstallDirectory));
+            bool marker = CecilInjector.IsPatched(Target.PatchAssemblyPath);
+            bool dll = File.Exists(Target.FixDllPath);
             if (marker && dll) return PatchStatus.Patched;
             if (!marker && !dll) return PatchStatus.Unpatched;
             return PatchStatus.Unknown;
@@ -52,57 +63,56 @@ public sealed class PatchService
 
     public string? FindLatestBackup()
     {
-        if (InstallDirectory == null) return null;
-        return Directory.GetFiles(InstallDirectory, "RazorEnhanced.exe.bak-*")
+        if (Target == null) return null;
+        return Directory.GetFiles(Target.InstallDirectory, Target.BackupSearchPattern)
             .OrderByDescending(f => f, StringComparer.OrdinalIgnoreCase)
             .FirstOrDefault();
     }
 
     public ElevationMode GetElevationMode()
     {
-        if (InstallDirectory == null) return ElevationMode.Unknown;
-        try { return ManifestElevationService.GetMode(RazorLocator.ExePath(InstallDirectory)); }
+        if (Target == null || !Target.SupportsAdminPatch) return ElevationMode.Unknown;
+        try { return ManifestElevationService.GetMode(Target.PatchAssemblyPath); }
         catch { return ElevationMode.Unknown; }
     }
 
     public void ApplyPatch(bool removeAdminRequirement = false)
     {
-        if (InstallDirectory == null)
-            throw new InvalidOperationException("No Razor Enhanced folder selected.");
+        if (Target == null)
+            throw new InvalidOperationException("No target selected.");
 
-        string exe = RazorLocator.ExePath(InstallDirectory);
-        string dllDest = RazorLocator.FixDllPath(InstallDirectory);
+        string assemblyPath = Target.PatchAssemblyPath;
+        string dllDest = Target.FixDllPath;
 
-        if (FileLockChecker.IsLocked(exe, out string lockReason))
+        if (FileLockChecker.IsLocked(assemblyPath, out string lockReason))
             throw new IOException(lockReason);
 
-        if (ElevationHelper.NeedsElevationFor(InstallDirectory))
+        if (ElevationHelper.NeedsElevationFor(Target.InstallDirectory))
         {
             WriteLog("Administrator rights required. Relaunching elevated…");
             ElevationHelper.RelaunchElevated();
             throw new OperationCanceledException("Relaunching elevated.");
         }
 
-        // Always refresh the runtime DLL (safe while RE is closed).
         ExtractFixDll(dllDest);
-        WriteLog("CuoHandshakeFix.dll installed/updated.");
+        WriteLog($"CuoHandshakeFix.dll installed/updated beside {Target.PatchFileName}.");
 
-        bool alreadyPatched = CecilInjector.IsPatched(exe);
+        bool alreadyPatched = CecilInjector.IsPatched(assemblyPath);
         if (!alreadyPatched)
         {
             string stamp = DateTime.Now.ToString("yyyyMMdd-HHmmss");
-            string bak = Path.Combine(InstallDirectory, $"RazorEnhanced.exe.bak-{stamp}");
-            File.Copy(exe, bak, overwrite: false);
+            string bak = assemblyPath + ".bak-" + stamp;
+            File.Copy(assemblyPath, bak, overwrite: false);
             WriteLog($"Backup created: {Path.GetFileName(bak)}");
 
             try
             {
-                CecilInjector.InjectBootstrap(exe, WriteLog);
+                CecilInjector.InjectBootstrap(assemblyPath, WriteLog);
             }
             catch
             {
-                File.Copy(bak, exe, overwrite: true);
-                WriteLog("IL injection failed — restored exe from backup.");
+                File.Copy(bak, assemblyPath, overwrite: true);
+                WriteLog("IL injection failed — restored assembly from backup.");
                 throw;
             }
 
@@ -115,47 +125,55 @@ public sealed class PatchService
 
         if (removeAdminRequirement)
         {
-            // Ensure a backup exists before rewriting the manifest.
-            if (FindLatestBackup() == null)
+            if (!Target.SupportsAdminPatch)
             {
-                string stamp = DateTime.Now.ToString("yyyyMMdd-HHmmss");
-                string bak = Path.Combine(InstallDirectory, $"RazorEnhanced.exe.bak-{stamp}");
-                File.Copy(exe, bak, overwrite: false);
-                WriteLog($"Backup created: {Path.GetFileName(bak)}");
+                WriteLog("Admin-manifest patch skipped (not applicable to this target).");
             }
+            else
+            {
+                if (FindLatestBackup() == null)
+                {
+                    string stamp = DateTime.Now.ToString("yyyyMMdd-HHmmss");
+                    string bak = assemblyPath + ".bak-" + stamp;
+                    File.Copy(assemblyPath, bak, overwrite: false);
+                    WriteLog($"Backup created: {Path.GetFileName(bak)}");
+                }
 
-            ManifestElevationService.SetAsInvoker(exe, WriteLog);
+                ManifestElevationService.SetAsInvoker(assemblyPath, WriteLog);
+            }
         }
+
+        if (Target.Product == TargetProduct.NeoUoNet472)
+            WriteLog("Note: Velopack updates may overwrite this patch — re-apply after NeoUO updates.");
 
         WriteLog("Patch update complete.");
     }
 
     public void RestoreBackup()
     {
-        if (InstallDirectory == null)
-            throw new InvalidOperationException("No Razor Enhanced folder selected.");
+        if (Target == null)
+            throw new InvalidOperationException("No target selected.");
 
-        string exe = RazorLocator.ExePath(InstallDirectory);
+        string assemblyPath = Target.PatchAssemblyPath;
         string? bak = FindLatestBackup()
-            ?? throw new FileNotFoundException("No RazorEnhanced.exe.bak-* backup found in this folder.");
+            ?? throw new FileNotFoundException($"No {Target.BackupSearchPattern} backup found in this folder.");
 
-        if (FileLockChecker.IsLocked(exe, out string lockReason))
+        if (FileLockChecker.IsLocked(assemblyPath, out string lockReason))
             throw new IOException(lockReason);
 
-        if (ElevationHelper.NeedsElevationFor(InstallDirectory))
+        if (ElevationHelper.NeedsElevationFor(Target.InstallDirectory))
         {
             WriteLog("Administrator rights required. Relaunching elevated…");
             ElevationHelper.RelaunchElevated();
             throw new OperationCanceledException("Relaunching elevated.");
         }
 
-        File.Copy(bak, exe, overwrite: true);
+        File.Copy(bak, assemblyPath, overwrite: true);
         WriteLog($"Restored from {Path.GetFileName(bak)}");
 
-        string dll = RazorLocator.FixDllPath(InstallDirectory);
-        if (File.Exists(dll))
+        if (File.Exists(Target.FixDllPath))
         {
-            File.Delete(dll);
+            File.Delete(Target.FixDllPath);
             WriteLog("Removed CuoHandshakeFix.dll");
         }
 

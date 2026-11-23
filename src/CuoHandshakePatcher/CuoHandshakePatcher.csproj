@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
@@ -10,7 +10,7 @@
     <Product>CUO Handshake Fix</Product>
     <AssemblyName>CuoHandshakePatcher</AssemblyName>
     <RootNamespace>CuoHandshakePatcher</RootNamespace>
-    <Version>1.0.0</Version>
+    <Version>1.1.0</Version>
   </PropertyGroup>
 
   <ItemGroup>
@@ -23,14 +23,13 @@
     </None>
   </ItemGroup>
 
-  <!-- Build the net472 fix DLL, then embed it for extraction at patch time. -->
+  <!-- Build the netstandard2.0 fix DLL, then embed it for extraction at patch time. -->
   <Target Name="BuildAndEmbedFixDll" BeforeTargets="PrepareForBuild">
-    <!-- Do not forward RuntimeIdentifier — the fix DLL is net472 AnyCPU for RE. -->
     <MSBuild Projects="..\CuoHandshakeFix\CuoHandshakeFix.csproj"
              Targets="Restore;Build"
              Properties="Configuration=$(Configuration);Platform=AnyCPU;RuntimeIdentifier=;RuntimeIdentifiers=" />
     <PropertyGroup>
-      <_FixDll>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\CuoHandshakeFix\bin\$(Configuration)\net472\CuoHandshakeFix.dll'))</_FixDll>
+      <_FixDll>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\CuoHandshakeFix\bin\$(Configuration)\netstandard2.0\CuoHandshakeFix.dll'))</_FixDll>
     </PropertyGroup>
     <Error Condition="!Exists('$(_FixDll)')" Text="CuoHandshakeFix.dll was not built at $(_FixDll)" />
     <ItemGroup>

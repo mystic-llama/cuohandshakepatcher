@@ -11,3 +11,6 @@
 *.pdb
 *.log
 RazorEnhanced.exe.bak-*
+
+/_neosmoke/
+/.release-work/

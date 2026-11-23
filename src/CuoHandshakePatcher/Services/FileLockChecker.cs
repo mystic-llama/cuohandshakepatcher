@@ -18,7 +18,7 @@ public static class FileLockChecker
         }
         catch (IOException)
         {
-            string[] suspects = ["RazorEnhanced", "ClassicUO", "TazUO", "LegacyUO"];
+            string[] suspects = ["RazorEnhanced", "ClassicUO", "LegacyUO", "NeoUO", "neouo-net472"];
             var running = Process.GetProcesses()
                 .Where(p =>
                 {

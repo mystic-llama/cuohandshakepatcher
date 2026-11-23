@@ -139,7 +139,7 @@ namespace CuoHandshakeFix
                 byte[] data = ReadPacketBytes(packetReader);
                 string clientVersion = ResolveClientVersion();
                 FileLog($"Computing response. len={data.Length} ver={clientVersion}");
-                byte[] response = ServerCheck.ComputeResponse(data, clientVersion);
+                byte[] response = ComputeChallengeResponse(data, clientVersion);
                 SendToServer(response);
                 FileLog("0xD5 response sent.");
             }
@@ -148,6 +148,38 @@ namespace CuoHandshakeFix
                 FileLog("D5 Challenge response failed: " + ex);
                 TryLog("D5 Challenge response failed: " + ex);
             }
+        }
+
+        /// <summary>
+        /// Prefer host-built Assistant.Network.ServerCheck (NeoUO); fall back to our port.
+        /// </summary>
+        private static byte[] ComputeChallengeResponse(byte[] data, string clientVersion)
+        {
+            Type hostCheck = FindType("Assistant.Network.ServerCheck");
+            MethodInfo compute = null;
+            if (hostCheck != null)
+            {
+                foreach (MethodInfo candidate in hostCheck.GetMethods(BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic))
+                {
+                    if (candidate.Name != "ComputeResponse")
+                        continue;
+                    ParameterInfo[] ps = candidate.GetParameters();
+                    if (ps.Length == 2 && ps[0].ParameterType == typeof(byte[]) && ps[1].ParameterType == typeof(string))
+                    {
+                        compute = candidate;
+                        break;
+                    }
+                }
+            }
+
+            if (compute != null)
+            {
+                FileLog("Using host Assistant.Network.ServerCheck.ComputeResponse.");
+                return (byte[])compute.Invoke(null, new object[] { data, clientVersion });
+            }
+
+            FileLog("Using bundled CuoHandshakeFix.ServerCheck.ComputeResponse.");
+            return ServerCheck.ComputeResponse(data, clientVersion);
         }
 
         private static byte[] ReadPacketBytes(object packetReader)
